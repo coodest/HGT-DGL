@@ -81,10 +81,12 @@ class HGTLayer(nn.Module):
                 G.nodes[ntype].data[out_key] = self.drop(self.norms[n_id](trans_out))
             else:
                 G.nodes[ntype].data[out_key] = self.drop(trans_out)
+    
     def __repr__(self):
         return '{}(in_dim={}, out_dim={}, num_types={}, num_types={})'.format(
             self.__class__.__name__, self.in_dim, self.out_dim,
             self.num_types, self.num_relations)
+         
                 
 class HGT(nn.Module):
     def __init__(self, G, n_inp, n_hid, n_out, n_layers, n_heads, use_norm = True):
@@ -94,7 +96,7 @@ class HGT(nn.Module):
         self.n_hid = n_hid
         self.n_out = n_out
         self.n_layers = n_layers
-        self.adapt_ws  = nn.ModuleList()
+        self.adapt_ws = nn.ModuleList()
         for t in range(len(G.node_dict)):
             self.adapt_ws.append(nn.Linear(n_inp,   n_hid))
         for _ in range(n_layers):
@@ -108,6 +110,7 @@ class HGT(nn.Module):
         for i in range(self.n_layers):
             self.gcs[i](G, 'h', 'h')
         return self.out(G.nodes[out_key].data['h'])
+
     def __repr__(self):
         return '{}(n_inp={}, n_hid={}, n_out={}, n_layers={})'.format(
             self.__class__.__name__, self.n_inp, self.n_hid,
