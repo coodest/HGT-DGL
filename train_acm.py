@@ -68,13 +68,13 @@ model = HGT(
 ).to(device)
 optimizer = torch.optim.AdamW(model.parameters())
 scheduler = torch.optim.lr_scheduler.OneCycleLR(
-    optimizer, total_steps=100, max_lr=1e-3, pct_start=0.05
+    optimizer, total_steps=1000, max_lr=1e-3, pct_start=0.05
 )
 
 best_val_acc = 0
 best_test_acc = 0
 train_step = 0
-for epoch in range(10):
+for epoch in range(1000):
     logits = model(G, "edge")
     # The loss is computed only for labeled nodes.
     loss = F.cross_entropy(logits[train_idx], labels[train_idx].to(device))
