@@ -78,7 +78,7 @@ for epoch in range(1000):
     logits = model(G, "edge")
     # The loss is computed only for labeled nodes.
     loss = F.cross_entropy(logits[train_idx], labels[train_idx].to(device))
-
+    score = logits.softmax(1).cpu()
     pred = logits.argmax(1).cpu()
     train_acc = (pred[train_idx] == labels[train_idx]).float().mean()
     val_acc = (pred[val_idx] == labels[val_idx]).float().mean()
@@ -90,7 +90,7 @@ for epoch in range(1000):
     train_step += 1
     scheduler.step(train_step)
 
-    LPEval.eval(pred[test_idx].numpy(), labels[test_idx].numpy())
+    LPEval.eval(pred[test_idx].numpy(), labels[test_idx].numpy(), score[test_idx].detach().numpy()[:, 1])
 
     # if best_val_acc < val_acc:
     #     best_val_acc = val_acc

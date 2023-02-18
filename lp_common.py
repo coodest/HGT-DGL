@@ -1,20 +1,13 @@
-from matplotlib.pyplot import get
 import numpy as np
 import sklearn.metrics as skm
-from sklearn.linear_model import LogisticRegression
 import random
 import math
-import torch_geometric.transforms as T
-from torch_geometric.datasets import AttributedGraphDataset, CitationFull
 import pickle
-import scipy.sparse as sp
 import networkx as nx
 from node2vec import Node2Vec
 from wikipedia2vec import Wikipedia2Vec
 import json
 import os
-from torch_geometric.data import Data
-import torch
 
 
 class Funcs:
@@ -81,7 +74,7 @@ class Context:
     feature_concat_embedding = False  # True / False, new embeddings with original embeddings / features together
     neg_pos_ratio = 1
     use_shuffle = False
-    max_node = 100
+    max_node = -1
 
     # 2. generator
     tr_ge_divide_ratio = 0.5
@@ -100,7 +93,7 @@ class Profile(Context):
     profile_e = "ppi"
     profile_f = "twitter"
     profile_g = "blogcatalog"
-    profile = profile_g
+    profile = os.environ["profile"]
 
     if profile == profile_a:
         dataset = "dblp"
@@ -140,9 +133,9 @@ class LPLoader:
         if P.dataset == "wikidata10k":
             graph = self.wiki(10000)
         if P.dataset == "ppi":
-            graph = self.ppi()
+            graph = self.ppi(3000)
         if P.dataset == "twitter":
-            graph = self.twitter()
+            graph = self.twitter(100)
         if P.dataset == "blogcatalog":
             graph = self.attributed_graph('blogcatalog')
 
@@ -451,7 +444,7 @@ class LPLoader:
 
         return self.graph_data.graph
 
-    def ppi(self, num=1000):
+    def ppi(self, num=3000):
         with open(P.dataset_dir + "ppi/" + "ppi-class_map.json", "r") as class_data:
             protein_class = json.load(class_data)
         protein_feats = np.load(P.dataset_dir + "ppi/" + "ppi-feats.npy")
@@ -492,6 +485,8 @@ class LPLoader:
 
     def attributed_graph(self, name, redownload=False):
         if redownload:
+            import torch_geometric.transforms as T
+            from torch_geometric.datasets import AttributedGraphDataset, CitationFull
             dataset = AttributedGraphDataset(P.dataset_dir + str(name).lower(), str(name).lower(), transform=T.NormalizeFeatures())
             data = dataset[0]
             x = data.x.cpu().detach().numpy()  # (5196, 8189)
@@ -534,7 +529,7 @@ class LPLoader:
 
 class LPEval():
     @staticmethod
-    def eval(predicted, ground_truth, multi_class=P.multi_class):
+    def eval(predicted, ground_truth, score, multi_class=P.multi_class):
         if len(predicted) == 0:
             print("predicted value is empty.")
             return
@@ -556,7 +551,7 @@ class LPEval():
             print("Acc: {:.4f} Micro-F1: {:.4f} Macro-F1: {:.4f}".format(accuracy, micro_f1, macro_f1))
         else:
             # auc
-            auc = skm.roc_auc_score(ground_truth, predicted)
+            auc = skm.roc_auc_score(ground_truth, score)
 
             # accuracy
             accuracy = skm.accuracy_score(ground_truth, predicted)
@@ -571,7 +566,10 @@ class LPEval():
             f1 = skm.f1_score(ground_truth, predicted)
 
             # AUPR
-            pr, re, _ = skm.precision_recall_curve(ground_truth, predicted)
+            pr, re, _ = skm.precision_recall_curve(ground_truth, score)
             aupr = skm.auc(re, pr)
 
-            print("Acc: {:.4f} AUC: {:.4f} Pr: {:.4f} Re: {:.4f} F1: {:.4f} AUPR: {:.4f}".format(accuracy, auc, precision, recall, f1, aupr))
+            # AP
+            ap = skm.average_precision_score(ground_truth, score)
+
+            print("Acc: {:.4f} AUC: {:.4f} Pr: {:.4f} Re: {:.4f} F1: {:.4f} AUPR: {:.4f} AP: {:.4f}".format(accuracy, auc, precision, recall, f1, aupr, ap))
