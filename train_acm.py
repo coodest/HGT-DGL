@@ -48,6 +48,7 @@ for etype in G.etypes:
     )
 
 # Random initialize input feature
+# breakpoint()
 G = G.to(device)
 for ntype in G.ntypes:
     emb = nn.Parameter(

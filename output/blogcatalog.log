@@ -1,6 +1,5 @@
 add type HAS_EDGE to relations.
 blogcatalog
-5196 / 5196
-Graph(num_nodes=680520, num_edges=210804240,
-      ndata_schemes={}
-      edata_schemes={})
+use first 3000 node
+used nodes / total nodes: 3000 / 5196
+

@@ -4,8 +4,6 @@ import random
 import math
 import pickle
 import networkx as nx
-from node2vec import Node2Vec
-from wikipedia2vec import Wikipedia2Vec
 import json
 import os
 
@@ -74,7 +72,6 @@ class Context:
     feature_concat_embedding = False  # True / False, new embeddings with original embeddings / features together
     neg_pos_ratio = 1
     use_shuffle = False
-    max_node = -1
 
     # 2. generator
     tr_ge_divide_ratio = 0.5
@@ -125,7 +122,7 @@ class LPLoader:
     def load_data(self):
         print(P.dataset)
         if P.dataset == "dblp":
-            graph = self.attributed_graph('dblp')
+            graph = self.attributed_graph('dblp', max_node=3500)
         if P.dataset == "wikidata1k":
             graph = self.wiki(1000)
         if P.dataset == "wikidata5k":
@@ -137,7 +134,7 @@ class LPLoader:
         if P.dataset == "twitter":
             graph = self.twitter(100)
         if P.dataset == "blogcatalog":
-            graph = self.attributed_graph('blogcatalog')
+            graph = self.attributed_graph('blogcatalog', max_node=10)
 
         # add embedding (optional)
         if P.embedding_method != 0:
@@ -237,6 +234,7 @@ class LPLoader:
         return train_pos, train_neg, test_pos, test_neg
 
     def add_embedding(self, graph, undirected=False):
+        from node2vec import Node2Vec
         # Make graph
         nodes = list(graph)
         edges = []
@@ -270,6 +268,7 @@ class LPLoader:
                     graph[e]["feature"] = np.array(list(embeddings[str(e)]), dtype=float)
 
     def wiki(self, num):
+        from wikipedia2vec import Wikipedia2Vec
         wiki2vec = Wikipedia2Vec.load(P.dataset_dir + "wikidata/enwiki_20180420_win10_500d.pkl")
         with open(P.dataset_dir + "wikidata/wikidata-20150921-250k.json", "r") as raw_data:
             entity_num = 0
@@ -483,7 +482,7 @@ class LPLoader:
 
         return self.graph_data.graph
 
-    def attributed_graph(self, name, redownload=False):
+    def attributed_graph(self, name, max_node=-1, redownload=False):
         if redownload:
             import torch_geometric.transforms as T
             from torch_geometric.datasets import AttributedGraphDataset, CitationFull
@@ -500,18 +499,19 @@ class LPLoader:
             x, edge_index, y = pickle.load(file)
 
         ori_x = len(x)
-        if P.max_node > 0:
-            x = x[:P.max_node]
-            y = y[:P.max_node]
+        if max_node > 0:
+            print(f"use first {max_node} node")
+            x = x[:max_node]
+            y = y[:max_node]
             from_node = []
             to_node = []
             for ind in range(len(edge_index[0])):
-                if edge_index[0][ind] >= P.max_node or edge_index[1][ind] >= P.max_node:
+                if edge_index[0][ind] >= max_node or edge_index[1][ind] >= max_node:
                     continue
                 from_node.append(edge_index[0][ind])
                 to_node.append(edge_index[1][ind])
             edge_index = np.array([from_node, to_node], dtype=np.int64)
-        print(f'{len(x)} / {ori_x}')
+        print(f'used nodes / total nodes: {len(x)} / {ori_x}')
 
         graph = dict()
         for i in range(x.shape[0]):
