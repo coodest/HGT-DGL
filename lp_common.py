@@ -134,7 +134,7 @@ class LPLoader:
         if P.dataset == "twitter":
             graph = self.twitter(100)
         if P.dataset == "blogcatalog":
-            graph = self.attributed_graph('blogcatalog', max_node=10)
+            graph = self.attributed_graph('blogcatalog', max_node=200)
 
         # add embedding (optional)
         if P.embedding_method != 0:
